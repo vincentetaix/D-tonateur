@@ -1,0 +1,115 @@
+#include <SevSeg.h>                    //Bibliothèque permettant de piloter l'afficheur 7 segments
+
+//Connections électroniques et variables des boutons
+const int BOUTON_MOINS = 13;            // Le bouton MOINS est relié à la broche 2
+const int BOUTON_PLUS = 12;             // Le bouton PLUS est relié à la broche 3
+const int BOUTON_START = 11;            // Le bouton START est relié à la broche 4
+int etatBoutonMoins = 0;               // variable d'état du bouton MOINS
+int etatBoutonPlus = 0;                // variable d'état du bouton PLUS
+int etatBoutonStart = 0;               // variable d'état du bouton START
+
+//Declaration de la variable "temps" et du temps entre chaque décompte
+
+int temps[] = {1,2,3,5,10,15,20,30,45,60,90,120,150,180,240,300,360};
+//met en place les délais en minutes: 1,2,3,5,10,15,20,30,45
+                        //en heures: 1h,1h30,2h,2h30,3h,4h,5h,6h
+const int delai= 60000; //delai de 1 minute
+
+//Gestion des relais:
+const int relai_1 = 10; //broche du 1er relai
+const int relai_2 = 9; //broche du 2nd relai
+const int relai_3 = A4; //broche du 3ème relai
+const int LED = A5 ; //Broche de la LED d'etat
+
+//Afficheur 7 segments
+SevSeg sevseg;
+const byte numDigits = 1;                      // Nombre de digits de l'afficheur 7 segments, ici il y en a 4 ( on utilise un afficheur référencé SH5461AS )
+const byte digitPins[] = {A0,A1,A2,A3}; // Branchement des broches contrôlant les chiffres, celles ou on mettra une résistance de 220 Ohm
+const byte segmentPins[] = {2, 3, 4, 5, 6, 7, 8}; // Branchements des broches controlant les segments
+
+
+void setup() {
+  // put your setup code here, to run once:
+  // On déclare chaque Bouton comme étant une entrée
+  pinMode(BOUTON_MOINS, INPUT);
+  pinMode(BOUTON_PLUS, INPUT);
+  pinMode(BOUTON_START, INPUT);
+
+  //On initialise les relais et la LED
+  pinMode(relai_1, OUTPUT);
+  pinMode(relai_2, OUTPUT);
+  pinMode(relai_3, OUTPUT);
+  pinMode(LED, OUTPUT);
+
+  //extinction de la LED au démarrage et allumage des relais
+  digitalWrite(LED, LOW) ;
+  digitalWrite(relai_1, HIGH) ;
+  digitalWrite(relai_2, HIGH) ;
+  digitalWrite(relai_3, HIGH) ;
+
+  //On initialise l'afficheur 7 Segments
+  sevseg.begin(COMMON_ANODE, numDigits, digitPins, segmentPins);
+  sevseg.setBrightness(60);      //On règle l'intensité lumineuse de l'afficheur 7 Segments
+}
+
+
+void loop() {
+  // put your main code here, to run repeatedly:
+//on initialise l'afficheur sur des zeros
+  sevseg.setNumber(0000);
+  sevseg.refreshDisplay();
+
+  //on commence par lire l'etat des buttons et stocker les états dans les variables d'état
+  etatBoutonMoins = digitalRead(BOUTON_MOINS);
+  etatBoutonPlus = digitalRead(BOUTON_PLUS);
+  etatBoutonStart = digitalRead(BOUTON_START);
+
+int select = 0;
+
+  if (etatBoutonMoins == 1)
+  {
+    select = select-1;
+    sevseg.setNumber(temps[select]);
+    sevseg.refreshDisplay();
+  }
+
+  if (etatBoutonPlus == 1)
+  {
+    select = select+1;
+    sevseg.setNumber(temps[select]);
+    sevseg.refreshDisplay();
+  }
+
+  if (etatBoutonStart == 1)
+  {
+   int timer_1= temps[select]; //choisi la durée du timer dans la base de temps
+   int timer_2= 10;
+    sevseg.setNumber(temps[select]);
+    sevseg.refreshDisplay();
+    
+    while (timer_1>0)
+    {
+      digitalWrite(LED, HIGH) ;
+      delay(delai);
+      timer_1 = (timer_1)-1;
+      digitalWrite(LED, LOW) ;
+	  delay(10);
+      
+    }
+    //declenchement des relais principaux
+    digitalWrite(relai_1, LOW) ;
+    digitalWrite(relai_2, LOW) ;
+    
+    if (timer_1=0)
+    {
+      while (timer_2>0)
+      {
+        timer_2 = timer_2-1;
+      }
+      //déclenchement des relais secondaires
+      digitalWrite(relai_3,LOW);
+    }
+  }
+
+  
+}
